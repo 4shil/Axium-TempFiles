@@ -1,126 +1,110 @@
-# AXIUM
+# Axium
 
-Temporary file transfer that deletes itself.
+Temporary file transfer that deletes itself. Upload a file, get a shareable link, set an expiry — the file is gone when the timer runs out.
 
-## What is AXIUM?
-
-AXIUM is a minimalist web app for temporary file sharing. Upload a file, get a link, share it, and the file is automatically deleted after expiry.
-
-- No accounts
-- No permanent storage
-- No tracking
-- Open source
+![file transfer auto delete](https://media.giphy.com/media/xT9IgAakFAIB5oF6vo/giphy.gif)
 
 ## Features
 
-- Drag & drop file upload
-- Direct upload to Amazon S3 (files never touch the server)
-- Configurable expiry: 10 min, 1 hour, 2 hours
-- Custom shareable links
+- Drag and drop file upload
+- Files upload directly to S3 — they never pass through the app server
+- Expiry options: 10 minutes, 1 hour, 2 hours
 - Password protection
 - One-time download mode
 - Download count limits
-- Automatic cleanup
+- Automatic cleanup via cron endpoint
 
-## Tech Stack
+## Stack
 
-- **Frontend:** Next.js 15, React 19, Tailwind CSS
-- **Storage:** Amazon S3
-- **Database:** In-memory (for demo) / Redis recommended for production
-- **Design:** Neo-Brutalism
+- **Framework:** Next.js 15, React 19, TypeScript
+- **Storage:** Amazon S3 (presigned uploads)
+- **Database:** Vercel Postgres (file metadata)
+- **Styling:** Tailwind CSS
 
-## Self-Hosting
+## Getting Started
 
 ### Prerequisites
 
 - Node.js 20+
-- AWS account with S3 access
+- AWS account with an S3 bucket
 
 ### Setup
 
-1. Clone the repository:
 ```bash
-git clone https://github.com/4shil/axium.git
-cd axium
-```
-
-2. Install dependencies:
-```bash
+git clone https://github.com/4shil/Axium-TempFiles.git
+cd Axium-TempFiles
 npm install
+cp .env.example .env.local
 ```
 
-3. Copy environment variables:
-```bash
-cp .env.example .env
+Edit `.env.local`:
+
+```
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_S3_BUCKET=
+POSTGRES_URL=
+CRON_SECRET=
 ```
 
-4. Configure `.env` with your AWS S3 credentials:
-```env
-AWS_REGION="us-east-1"
-AWS_ACCESS_KEY_ID="your_access_key_id"
-AWS_SECRET_ACCESS_KEY="your_secret_access_key"
-AWS_S3_BUCKET="your-bucket-name"
-# AWS_S3_ENDPOINT="(optional, for S3-compatible services)"
-```
-
-5. Run development server:
 ```bash
 npm run dev
 ```
 
-### Amazon S3 Setup
+Open [http://localhost:3000](http://localhost:3000).
 
-1. Sign in to the [AWS Console](https://aws.amazon.com/console/)
-2. Create a new S3 bucket (private recommended)
-3. Create an IAM user with S3 read/write permissions for your bucket
-4. Generate access keys for the IAM user
-5. Note down: Region, Access Key ID, Secret Access Key, Bucket Name
+### S3 Setup
 
-### Production Deployment (Render)
+1. Create a private S3 bucket.
+2. Create an IAM user with `s3:PutObject`, `s3:GetObject`, `s3:DeleteObject` on your bucket.
+3. Generate access keys for the IAM user.
+4. Set a CORS policy on the bucket to allow uploads from your frontend origin.
 
-1. Connect your GitHub repository to Render
-2. Create a new Web Service
-3. Add environment variables:
-   - `AWS_REGION`
-   - `AWS_ACCESS_KEY_ID`
-   - `AWS_SECRET_ACCESS_KEY`
-   - `AWS_S3_BUCKET`
-   - `CRON_SECRET` (for cleanup endpoint)
-4. Deploy!
+### File Cleanup
 
-For cleanup, set up a cron job to call `/api/cleanup` with `Authorization: Bearer <CRON_SECRET>` every 15 minutes.
+Set up a cron job (or Vercel Cron) to call `/api/cleanup` every 15 minutes:
 
-## Configuration
+```
+Authorization: Bearer <CRON_SECRET>
+```
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `MAX_FILE_SIZE` | Maximum upload size in bytes | 524288000 (500MB) |
-| `AWS_S3_BUCKET` | Amazon S3 bucket name | axium-files |
-| `CRON_SECRET` | Secret for cleanup endpoint | (none) |
+## Project Structure
+
+```
+Axium-TempFiles/
+├── app/
+│   ├── api/
+│   │   ├── upload/     # Presigned URL generation
+│   │   ├── files/      # File metadata CRUD
+│   │   └── cleanup/    # Expired file deletion
+│   └── page.tsx        # Upload UI
+├── components/         # UI components
+└── lib/                # S3 client, DB helpers
+```
 
 ## Architecture
 
+Files upload directly from the browser to S3 using presigned URLs. The Next.js backend only handles authorization, metadata storage, and cleanup — it never touches the file bytes.
+
 ```
-Client (Browser)
-    │
-    │ presigned upload URL
-    ▼
-Amazon S3 (Object Storage)
-    │
-    │ metadata only
-    ▼
-AXIUM API (Next.js)
-    │
-    ▼
-In-Memory Store / Redis
+Browser  -->  S3 (file upload, presigned URL)
+Browser  -->  Next.js API (metadata, expiry, links)
+Cron     -->  Next.js API /cleanup  -->  S3 delete + DB purge
 ```
 
-**Key principle:** Files never pass through the backend server. The backend only handles authorization, metadata, and presigned URL generation.
+## Environment Variables
+
+| Variable               | Description                          |
+|------------------------|--------------------------------------|
+| `AWS_REGION`           | S3 bucket region                     |
+| `AWS_ACCESS_KEY_ID`    | IAM access key                       |
+| `AWS_SECRET_ACCESS_KEY`| IAM secret key                       |
+| `AWS_S3_BUCKET`        | Bucket name                          |
+| `POSTGRES_URL`         | Vercel Postgres connection string    |
+| `CRON_SECRET`          | Bearer token for cleanup endpoint    |
+| `MAX_FILE_SIZE`        | Max upload in bytes (default 500MB)  |
 
 ## License
 
 MIT
-
-## Credits
-
-Built with Neo-Brutalism design principles.
