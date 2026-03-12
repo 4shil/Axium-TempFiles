@@ -2,7 +2,7 @@
 
 Temporary file transfer that deletes itself. Upload a file, get a shareable link, set an expiry — the file is gone when the timer runs out.
 
-![file transfer auto delete](https://media.giphy.com/media/xT9IgAakFAIB5oF6vo/giphy.gif)
+![file transfer auto delete](https://ibb.co/nMyvTQ6Y)
 
 ## Features
 
