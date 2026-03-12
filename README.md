@@ -2,7 +2,7 @@
 
 Temporary file transfer that deletes itself. Upload a file, get a shareable link, set an expiry — the file is gone when the timer runs out.
 
-![file transfer auto delete](https://ibb.co/nMyvTQ6Y)
+![Axium File Transfer](https://ibb.co/nMyvTQ6Y)
 
 ## Features
 
